@@ -1,0 +1,45 @@
+====Gleam====
+
+Gleam is a C rewrite of the Cumulative Virtual Machine I wrote in JavaScript.
+You can see the original implementation in the cumulative directory.
+
+====Cumulative?====
+
+Cumulative was an idea I'd had floating around in my head for many years.
+I had wondered if it were possible to write a virtual machine with only one
+instruction: Add.
+The answer is yes, but you'll need some other ways to track state.
+
+The Cumulative VM uses a lot of registers to track various things - was the
+result of the operation > 0, < 0, accumulator and decumulator registers, and
+a few more.
+
+The Cumulative instruction set is:
+	*Ptr + Addition -> *Dest, or
+	Ptr, Addition, Dest
+
+Which means, read the value Ptr points to, add Addition, store in to location
+Dest.
+Some samples (uses macros):
+
+	$abs0, 5, 100	; Read from Absolute 0, add 5, store in 100
+	100, 0, 100		; Read from 100, do nothing
+	$gt, 120, $cp	; Move the Greater Than flag, plus 120 to code pointer
+	            	; The $gt flag is exactly the size of an opcode, so you
+	            	; can perform an if > 0 by placing two jump statements at
+	            	; 120 and 121 - the first jumps if the value is > 0, the
+	                ; second does not. Alternatively, the second doesn't even
+	            	; jump.
+	$cp, 50, $cp	; Add 50 to code pointer. Effectively jumps to given
+	            	; location.
+
+Since all the registers are set using the $sp (Stack Pointer), you can craft
+the equivalence of a call function by the following:
+	; assumes 1000 is enough to hold the current function
+	$psp, 0, 1000 + $psp	; Setup previous stack pointer on the new stack
+	$abs0, 0, $r1	; r1 = 0
+	$psp, 0, $r1	; r1 = $psp
+	$dc, 0, 1000 + $abs	; Use decumulator to point new stack's abs0 to this
+	                   	; stack's abs0.
+	%func_address, 0, $r1	; 
+	$sp, 1000, $sp	; Jump to new stack
