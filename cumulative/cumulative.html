@@ -1,0 +1,325 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title> Cumulative </title>
+		<style type="text/css">
+			#toolbar { display: block; }
+			#toolbar span { margin-right: 5em; }
+			#input { float: left; width: 30%; }
+			#input textarea { width: 90%; height: 400px; }
+			#status div { float: left; margin-right: 3em; width: 12em; font-family: monospace; font-size: 110%; }
+			#status div span.title { font-weight: bold; margin-right: 1em; }
+			div#output { float: right; width: 60%; border: 1px solid; font-family: monospace; }
+			div#output > div { width: 100%; height: 400px; overflow: auto; }
+			div#output > div span { font-size: 110%; display: inline-block; width: 5em; }
+			div#output > div:after { clear: both; }
+		</style>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+		<script>
+			var button_handlers = {};
+			var cpu = {};
+
+			/* Some sample programs:
+			0, 0, cp	- Endless jump to 0
+
+			Test if [100] == 20
+			100: 20
+			101: 0
+			100, -20, 101
+			rs, 
+
+
+			Some notes about arithmatic:
+				o Because the first parameter is always a pointer, adding to an existing register or memory location
+				  requires a few steps:
+				  	1 Store the location of the memory you want to read from somewhere
+				  	2 Add from this location the number you wish to add
+				  I don't think it's possible to add two locations together, unless we define an accumulator register...
+
+
+			*/
+			function CPU () {
+				var self = this;
+
+				// To avoid having to allocate, we'll use an object. Then, only used addresses will consume memory!
+				// 0 is always zero
+				// If you want to define your own constants (eg 1 through 9), you must add from 0
+				self._memory = {};
+
+				self._stackSize = 0;
+				self._nextDefine = 10;
+				self._codeStart = -1;
+
+				function define (value) {
+					// Start is self._memory loc 10
+					self._stackSize++;
+					var slot = self._nextDefine++;
+					self._memory[slot] = value || 0;
+					return slot;
+				}
+
+				function defFn (code) {
+					if (self._codeStart == -1) {
+						// Stack should be defined by now
+						self._codeStart = self._nextDefine + self._stackSize + 5;	// Just in case
+					}
+
+					for (var i = 0; i < code.length; i++)
+						self._memory[self._codeStart + i] = code[i];
+
+					var start = self._codeStart;
+					self._codeStart += code.length + 1;
+					return start;
+				}
+
+				var a0 = define();	// Absolute 0 - offset required to access memory[0]
+				var cp = define();	// Code pointer
+				var rp = define();	// Return pointer
+				var sp = define();	// Stack pointer
+				var psp = define(); // Previous Stack Pointer
+				var eq = define();	// New value == 0
+				var mt = define();	// New value > 0
+				var lt = define();	// < 0
+				var ns = define();	// Number size (maximum size of a number before it loops back to 0)
+				var ac = define();	// Accumulator register - each command will add the value of dst to this register
+				var dc = define();	// Decumulator register - "               " decrement "                          "
+				var r0 = define();
+				var r1 = define();
+				var r2 = define();
+				var r3 = define();
+				var r4 = define();
+
+				self._stackSize = self._nextDefine++;
+
+				// Define the 'call' gosub
+				// Input: r0 (function to call)
+				// Input: r1 (location of parameters)
+				// Input: rp (location to return to)
+				// Output: r2 (result)
+				// Sets up a new stack by copying all current stack symbols, and modifying some others
+				var call = defFn((function() {
+					var code = [];
+					var dest = 5000; // Increase mem segment by 5000
+					for (i = 0; i < self._stackSize - 1; i++) {
+						// src + 0 => dest + 0
+						code = code.concat([i, 0, dest + i]);
+					}
+					// Point new sp to dest
+					code = code.concat([sp, dest, dest + sp]);
+					// Point the new psp to current sp
+					code = code.concat([sp, -dest, dest + psp]);
+					// Point new cp to value of new psp + r0
+						// Hard part - adding two numbers
+						// We use the accumulator register:
+							// Clear it
+							// Move first value somewhere
+							// Move second value somewhere (neither dest in important)
+							// Move ac, which containts these two values added together
+					code = code.concat([
+						// Step 1: Clear AC
+						0, 0, ac,
+						// Step 2: Move psp into destination
+						dest + psp, 0, dest + cp,
+						// Step 3: Move r0 into destination
+						r0, 0, dest + cp,
+						// Step 4: AC now contains psp + r0
+						ac, 0, dest + cp
+					]);
+					// dest_a0 = a0 - dest
+					code = code.concat([a0, -dest, dest + a0]);
+					// Finally, move current sp to the new sp
+					code = code.concat([sp, dest, sp]);
+
+					// This code will be called on return
+					code = code.concat([rp, 0, cp]);
+
+					return code;
+				})());
+
+				// Define the 'ret' gosub
+				// Todo: Return a value
+				var ret = defFn([
+					// sp -= psp
+					0, 0, ac,
+					psp, 0, psp,
+					sp, 0, sp,
+					ac, 0, sp,
+				]);
+
+				this.symbols = {
+					a0: a0,		// Absolute 0
+					cp: cp,		// Code Pointer
+					rp: rp,		// Return Pointer
+					sp: sp,		// Stack pointer
+					psp: psp,	// Previous stack pointer
+					eq: eq,		// == 0
+					mt: mt,		// > 0
+					lt: lt,		// < 0
+					ns: ns,
+					ac: ac,
+					dc: dc,
+					r0: r0,
+					r1: r1,
+					r2: r2,
+					r3: r3,
+					call: call,
+					ret: ret,
+				};
+				this.$ = this.symbols;
+
+				this.load = function(data, at) {
+					at = (at === undefined ? 1000 : at);
+					for (var i = 0; i < data.length; i++)
+						self._memory[at + i] = data[i];
+				};
+
+				// CPU Initialization!
+				// Write 0 to location 0 (a constant you can rely on)
+				// Write a small program that resets cp to 0 if cp is assigned 0
+				//  - this is basically a jump (here) instruction which is an endless loop
+				// Additionally, if no code is loaded into self._memory, cp will be 0 - the endless loop!
+				this.load([0, 0, cp], 0);
+
+				this.start = function(at) { self._memory[cp] = at; }
+
+				function decodeSymbol (pos) {
+					for (var name in self.symbols)
+						if (self.symbols[name] == pos) return name;
+					return '[' + pos + ']';
+				}
+
+				// Execute an iteration, move code pointer up
+				// Operation is always: add [from], amount, [to]
+				// Numbers don't exceed value of im register
+				this.iter = function() {
+					var _sp = self._memory[self._memory[sp] + sp];
+					var debug = [_sp + self._memory[_sp + cp]];
+					var from = self._memory[_sp + self._memory[_sp + cp]++] || 0;
+					debug.push(decodeSymbol(from));
+					var add  = self._memory[_sp + self._memory[_sp + cp]++];
+					debug.push(add);
+					var to   = self._memory[_sp + self._memory[_sp + cp]++];
+					debug.push(decodeSymbol(to));
+					// And assign
+					var v = self._memory[_sp + to] = ((self._memory[_sp + from] || 0) + add);
+
+					// Compute == 0, > 0
+					self._memory[_sp + eq] = (v == 0) ? 3 : 0;
+					self._memory[_sp + mt] = (v  > 0) ? 3 : 0;
+					self._memory[_sp + lt] = (v  < 0) ? 3 : 0;
+					// Accumulate in the accumulator
+					self._memory[_sp + ac] += v;
+					// Decumulate in the decumulator
+					self._memory[_sp + dc] -= v;
+
+					debug.push(' = ' + v);
+
+					return debug;
+				};
+
+				return this;
+			};
+
+			function Compiler (ucode) {
+				var lines = ucode.split("\n");
+				var code = [];
+
+				
+			}
+
+			cpu = new CPU();
+
+			// Define a small function at 1500
+			var test = 1500;
+			cpu.load([
+				// Call ret
+				// cp = a0 + ret
+				cpu.$.a0, cpu.$.ret, cpu.$.cp,
+			], test);
+
+			// And a program to call it
+			var me = 1000;
+			var ret = me + 100;
+			cpu.load([
+				0, test, cpu.$.r0,		// Assign function location
+				0, ret, cpu.$.rp,		// Assign return location
+				0, me + 31, me + 30,		// Assign loc of parameter 1 to +30
+				0, 42, me + 31,				// Assign value we want to use to +31
+				0, me + 33, me + 32,		// Assign parameter 2 to +32
+				0, 7, me + 33,				// Assign value we want to use to +32
+				0, me + 30, cpu.$.r1,	// Point parameter to location
+				// Gosub call by adding absolute 0 register and call's address
+				cpu.$.a0, cpu.$.call, cpu.$.cp,	// Gosub call
+			], me);
+			// Return handler
+			cpu.load([
+				0, 0, cpu.$.cp,		// Halt
+			], ret);
+
+			cpu.start(me);
+						
+			$(function() {
+				$("button").click(function() {
+					var cmd = $(this).attr('command');
+					(button_handlers[cmd] || function() { alert("Handler not present for " + cmd); })();
+				});
+
+				var iter = function () {
+					var num = parseInt($("#iters").val()) || 1;
+					while(num--) {
+						var result = cpu.iter();
+						var container = $("<div></div>");
+						for(var i = 0; i < result.length; i++)
+							container.append($("<span></span>").html(result[i]));
+						$("div#output > div").prepend(container);
+					}
+					//if (result) setTimeout(iter, 100);
+				};
+
+				button_handlers['iter'] = iter;
+
+				for (var name in cpu.symbols) {
+					var ele = $("<div class='status'></div>");
+					var title = $("<span class='title'></span>").text(name + ":");
+					var val = $("<span class='value'></span>");
+					ele.append(title).append(val);
+					$('#status').append(ele);
+					(function(_val, _name) {
+						_val.bind('update', function() {
+							var current = cpu._memory[cpu._memory[cpu.symbols['sp']] + cpu.symbols[_name]];
+							var bottom  = cpu._memory[cpu.symbols[_name]];
+							_val.text(current + ' (' + bottom + ')');
+						});
+					})(val, name);
+				}
+
+				setInterval(function() {
+					$("#status .value").trigger('update');
+				}, 1000);
+
+				//iter();
+			});
+		</script>
+	</head>
+
+	<body>
+		<div id="toolbar">
+			<span>Enter code into text area, then click Run</span>
+			<span>
+				<input type="text" id="iters" size="1" value="1" />
+				<button command="iter">Iteration</button>
+			</span>
+			<span><button command="run">Run</button>
+			<span><button command="clear">Clear</button></span>
+		</div>
+		<div style="clear: both;">&nbsp;</div>
+		<div id="input">
+			<textarea></textarea>
+		</div>
+		<div id="status">
+		</div>
+		<div id="output">
+			<div></div>
+		</div>
+	</body>
+</html>
