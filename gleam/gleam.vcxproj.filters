@@ -18,21 +18,21 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gleam.c">
+    <ClCompile Include="src/gleam.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gleam_emu.c">
+    <ClCompile Include="src/gleam_emu.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="gleam_mem.c">
+    <ClCompile Include="src/gleam_mem.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gleam_emu.h">
+    <ClInclude Include="include\gleam_emu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="gleam_mem.h">
+    <ClInclude Include="include\gleam_mem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

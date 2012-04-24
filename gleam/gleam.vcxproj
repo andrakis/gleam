@@ -52,6 +52,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>false</TreatWarningAsError>
       <TreatSpecificWarningsAsErrors>4716</TreatSpecificWarningsAsErrors>
+      <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -81,34 +82,14 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="gleam.c">
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
-      <MultiProcessorCompilation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</MultiProcessorCompilation>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</CompileAsManaged>
-      <MultiProcessorCompilation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</MultiProcessorCompilation>
-      <ExceptionHandling Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExceptionHandling>
-      <ExceptionHandling Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExceptionHandling>
-      <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DisableLanguageExtensions>
-      <TreatWChar_tAsBuiltInType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</TreatWChar_tAsBuiltInType>
-      <ForceConformanceInForLoopScope Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ForceConformanceInForLoopScope>
-      <RuntimeTypeInfo Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</RuntimeTypeInfo>
-      <OpenMPSupport Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</OpenMPSupport>
-      <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DisableLanguageExtensions>
-      <TreatWChar_tAsBuiltInType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TreatWChar_tAsBuiltInType>
-      <ForceConformanceInForLoopScope Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ForceConformanceInForLoopScope>
-      <RuntimeTypeInfo Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</RuntimeTypeInfo>
-      <OpenMPSupport Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</OpenMPSupport>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>
-      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
+    <ClCompile Include="src/gleam.c">
     </ClCompile>
-    <ClCompile Include="gleam_emu.c" />
-    <ClCompile Include="gleam_mem.c" />
+    <ClCompile Include="src\gleam_emu.c" />
+    <ClCompile Include="src\gleam_mem.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gleam_emu.h" />
-    <ClInclude Include="gleam_mem.h" />
+    <ClInclude Include="include\gleam_emu.h" />
+    <ClInclude Include="include\gleam_mem.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
