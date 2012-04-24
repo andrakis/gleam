@@ -2,5 +2,5 @@ Debug/*
 gleam.sdf
 gleam.suo
 ipch/*
-
+*.swp
 gleam/Debug/*
