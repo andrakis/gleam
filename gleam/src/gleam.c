@@ -1,9 +1,9 @@
 // gleam.cpp : Defines the entry point for the console application.
 //
 
-#include <conio.h>
 #include <stdio.h>
 
+#include "platform.h"
 #include "gleam_mem.h"
 
 int main(int argc, char* argv[])
