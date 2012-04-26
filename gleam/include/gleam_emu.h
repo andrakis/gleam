@@ -5,7 +5,7 @@
 #ifndef _GLEAM_EMU_H
 #define _GLEAM_EMU_H
 
-typedef long long gnum;
+#include "gleam.h"
 
 struct gleam_regs {
 	// Required registers

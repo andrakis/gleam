@@ -6,7 +6,7 @@
 #ifndef _GLEAM_MEM_H
 #define _GLEAM_MEM_H
 
-#include "gleam_emu.h"
+#include "gleam.h"
 
 #define PAGE_SIZE 0x10000
 
