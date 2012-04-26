@@ -4,3 +4,4 @@ gleam.suo
 ipch/*
 *.swp
 gleam/Debug/*
+*.o
