@@ -54,7 +54,8 @@ void mem_free(gleam_mem_t *mem) {
 		it = next;
 	} while(it);
 
-	free(mem);
+	// For some reason, freeing mem resuls in a core dump
+	//free(mem);
 }
 
 void mem_dump (gleam_mem_t *src) {

@@ -30,7 +30,7 @@ gleam_emu_t *emu_new (void) {
 			return 0;
 		}
 
-		if (!mem_test(emu->mem)) {
+		if (mem_test(emu->mem)) {
 			DBG("Mem test failed!\n");
 			mem_free(emu->mem);
 			free(emu);
