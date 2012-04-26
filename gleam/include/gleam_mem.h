@@ -18,8 +18,17 @@ struct mem_node {
 };
 typedef struct mem_node mem_node_t;
 
-int mem_init(void);
-gnum mem_test(void);
-void mem_dump(void);
+struct gleam_mem {
+	mem_node_t base;
+	mem_node_t *head;
+};
+typedef struct gleam_mem gleam_mem_t;
+
+gleam_mem_t *mem_new(void);
+void mem_free(gleam_mem_t *);
+gnum mem_test(gleam_mem_t *);
+void mem_dump(gleam_mem_t *);
+gnum mem_read(gnum location, gleam_mem_t *mem);
+void mem_write(gnum location, gnum value, gleam_mem_t *mem);
 
 #endif

@@ -19,23 +19,46 @@
 #include <stdio.h>
 #include "gleam_mem.h"
 
-// First page
-static mem_node_t base;
-
-int mem_init ()
+gleam_mem_t *mem_new ()
 {
-	base.start = 0;
-	base.range = PAGE_SIZE;
-	base.next = base.prev = 0;
-	base.page = (char*)malloc(PAGE_SIZE);
-	if (!base.page) return 1;
+	gleam_mem_t *mem = (gleam_mem_t*)malloc(sizeof(gleam_mem_t));
+	if (!mem) return 0;
 
-	memset(base.page, 0, PAGE_SIZE);
-	return 0;
+	mem->head = &mem->base;
+	mem->base.start = 0;
+	mem->base.range = PAGE_SIZE;
+	mem->base.next = mem->base.prev = 0;
+	mem->base.page = (char*)malloc(PAGE_SIZE);
+	if (!mem->base.page) {
+		free(mem);
+		return 0;
+	}
+
+	memset(mem->base.page, 0, PAGE_SIZE);
+	return mem;
 }
 
-void mem_dump () {
-	mem_node_t *it = &base;
+void mem_free(gleam_mem_t *mem) {
+	// Walk from lowest to highest
+	mem_node_t *it = &mem->base;
+	mem_node_t *next;
+
+	// Find lowest value
+	while(it->prev) it = it->prev;
+
+	// Walk!
+	do {
+		next = it->next;
+		free(it->page);
+		free(it);
+		it = next;
+	} while(it);
+
+	free(mem);
+}
+
+void mem_dump (gleam_mem_t *src) {
+	mem_node_t *it = &src->base;
 	gnum pages = 0;
 
 	// Find lowest value
@@ -52,7 +75,7 @@ void mem_dump () {
 }
 
 // I'm sure there is a better way to do this...
-gnum mem_align(gnum offset) 
+gnum mem_align(gnum offset)
 {
 	long sign;
 
@@ -70,7 +93,6 @@ gnum mem_align(gnum offset)
 		return offset;
 }
 
-// Needs to align start to PAGE_SIZE!
 void mem_allocate(gnum location, mem_node_t *dest) {
 	mem_node_t *new_node = (mem_node_t*)malloc(sizeof(mem_node_t));
 
@@ -89,9 +111,6 @@ void mem_allocate(gnum location, mem_node_t *dest) {
 		dest->next = new_node;
 	}
 }
-
-#define READ 0
-#define WRITE 1
 
 mem_node_t *mem_select (gnum location, mem_node_t *from) {
 	if (location >= from->start && location <= from->start + from->range) {
@@ -113,7 +132,7 @@ mem_node_t *mem_select (gnum location, mem_node_t *from) {
 	}
 }
 
-gnum mem_read_from(gnum location, mem_node_t *start) {
+gnum mem_read(gnum location, gleam_mem_t *mem) {
 	register gnum offset = 0;
 	gnum page_offset;
 	
@@ -121,23 +140,19 @@ gnum mem_read_from(gnum location, mem_node_t *start) {
 	void *b = &dst;
 	gnum loc = location * sizeof(gnum);
 
-	mem_node_t *page = mem_select(loc, start);
+	mem->head = mem_select(loc, mem->head);
 
 	for(offset = 0; offset < sizeof(gnum); offset++) {
-		page_offset = (loc - page->start) + offset;
-		*((char*)b + offset) = *(page->page + page_offset);
+		page_offset = (loc - mem->head->start) + offset;
+		*((char*)b + offset) = *(mem->head->page + page_offset);
 		// Make sure we're in bounds
-		page = mem_select(loc, page);
+		mem->head = mem_select(loc, mem->head);
 	}
 
 	return dst;
 }
 
-gnum mem_read(gnum location) {
-	return mem_read_from(location, &base);
-}
-
-void mem_write_from(gnum location, gnum value, mem_node_t *start) {
+void mem_write(gnum location, gnum value, gleam_mem_t *mem) {
 	register gnum offset = 0;
 	gnum page_offset;
 	
@@ -145,35 +160,31 @@ void mem_write_from(gnum location, gnum value, mem_node_t *start) {
 	void *b = &dst;
 	gnum loc = location * sizeof(gnum);
 
-	mem_node_t *page = mem_select(loc, start);
+	mem->head = mem_select(loc, mem->head);
 
 	for(offset = 0; offset < sizeof(gnum); offset++) {
-		page_offset = (loc - page->start) + offset;
-		*(page->page + page_offset) = *((char*)b + offset);
+		page_offset = (loc - mem->head->start) + offset;
+		*(mem->head->page + page_offset) = *((char*)b + offset);
 		// Make sure we're in bounds
-		page = mem_select(loc, page);
+		mem->head = mem_select(loc, mem->head);
 	}
 }
 
-void mem_write(gnum location, gnum value) {
-	mem_write_from(location, value, &base);
-}
-
-gnum mem_test () {
+gnum mem_test (gleam_mem_t *mem) {
 	gnum offset = 0xFF;
 
 	while(offset < 0xFFFFFFFF) {
-		mem_write(offset + 0, 'H');
-		mem_write(offset + 1, 'e');
-		mem_write(offset + 2, 'l');
-		mem_write(offset + 3, 'l');
-		mem_write(offset + 4, 'o');
+		mem_write(offset + 0, 'H', mem);
+		mem_write(offset + 1, 'e', mem);
+		mem_write(offset + 2, 'l', mem);
+		mem_write(offset + 3, 'l', mem);
+		mem_write(offset + 4, 'o', mem);
 
-		if (mem_read(offset + 0) != 'H' ||
-			mem_read(offset + 1) != 'e' ||
-			mem_read(offset + 2) != 'l' ||
-			mem_read(offset + 3) != 'l' ||
-			mem_read(offset + 4) != 'o') {
+		if (mem_read(offset + 0, mem) != 'H' ||
+			mem_read(offset + 1, mem) != 'e' ||
+			mem_read(offset + 2, mem) != 'l' ||
+			mem_read(offset + 3, mem) != 'l' ||
+			mem_read(offset + 4, mem) != 'o') {
 				return offset;
 		}
 
@@ -182,17 +193,17 @@ gnum mem_test () {
 
 	offset = -0xFF;
 	while(offset > (gnum)-0xFFFFFF) {
-		mem_write(offset + 0, 'H');
-		mem_write(offset + 1, 'e');
-		mem_write(offset + 2, 'l');
-		mem_write(offset + 3, 'l');
-		mem_write(offset + 4, 'o');
+		mem_write(offset + 0, 'H', mem);
+		mem_write(offset + 1, 'e', mem);
+		mem_write(offset + 2, 'l', mem);
+		mem_write(offset + 3, 'l', mem);
+		mem_write(offset + 4, 'o', mem);
 
-		if (mem_read(offset + 0) != 'H' ||
-			mem_read(offset + 1) != 'e' ||
-			mem_read(offset + 2) != 'l' ||
-			mem_read(offset + 3) != 'l' ||
-			mem_read(offset + 4) != 'o') {
+		if (mem_read(offset + 0, mem) != 'H' ||
+			mem_read(offset + 1, mem) != 'e' ||
+			mem_read(offset + 2, mem) != 'l' ||
+			mem_read(offset + 3, mem) != 'l' ||
+			mem_read(offset + 4, mem) != 'o') {
 				return offset;
 		}
 
