@@ -84,12 +84,17 @@
   <ItemGroup>
     <ClCompile Include="src/gleam.c">
     </ClCompile>
+    <ClCompile Include="src\gleam_debug.c" />
     <ClCompile Include="src\gleam_emu.c" />
     <ClCompile Include="src\gleam_mem.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\gleam.h" />
+    <ClInclude Include="include\gleam_debug.h" />
     <ClInclude Include="include\gleam_emu.h" />
     <ClInclude Include="include\gleam_mem.h" />
+    <ClInclude Include="include\gleam_table.h" />
+    <ClInclude Include="include\platform.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

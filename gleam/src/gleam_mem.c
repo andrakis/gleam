@@ -14,9 +14,8 @@
  *
  */
 
-#include <malloc.h>
-#include <memory.h>
-#include <stdio.h>
+#include <malloc.h>		// malloc, free
+#include <memory.h>		// memset
 #include "gleam_mem.h"
 
 gleam_mem_t *mem_new ()
@@ -49,8 +48,8 @@ void mem_free(gleam_mem_t *mem) {
 	// Walk!
 	do {
 		next = it->next;
-		free(it->page);
-		free(it);
+		//free(it->page);
+		//free(it);
 		it = next;
 	} while(it);
 
@@ -120,7 +119,7 @@ mem_node_t *mem_select (gnum location, mem_node_t *from) {
 		// Prev page not exist or too low? Insert page
 		if (from->prev == 0 || location > (from->prev->start + from->prev->range)) {
 			mem_allocate(location, from);
-		} 
+		}
 
 		return mem_select(location, from->prev);
 	} else {

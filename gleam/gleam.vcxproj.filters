@@ -21,10 +21,13 @@
     <ClCompile Include="src/gleam.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src/gleam_emu.c">
+    <ClCompile Include="src\gleam_emu.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src/gleam_mem.c">
+    <ClCompile Include="src\gleam_mem.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gleam_debug.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -33,6 +36,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\gleam_mem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gleam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gleam_debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gleam_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\platform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
