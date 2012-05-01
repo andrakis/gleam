@@ -11,12 +11,16 @@ int main(int argc, char* argv[])
 {
 	gleam_emu_t *emu = emu_new();
 	if (!emu) {
+		getch();
 		return 1;
 	}
 
-	emu_test(emu);
+	//emu_test(emu);
+	emu_iterate(emu);
 
 	emu_free(emu);
+
+	getch();
 	return 0;
 }
 
