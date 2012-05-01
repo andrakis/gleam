@@ -133,7 +133,7 @@ mem_node_t *mem_select (gnum location, mem_node_t *from) {
 	}
 }
 
-gnum mem_read(gnum location, gleam_mem_t *mem) {
+gnum mem_read_byte(gnum location, gleam_mem_t *mem) {
 	register gnum offset = 0;
 	gnum page_offset;
 	
@@ -153,7 +153,16 @@ gnum mem_read(gnum location, gleam_mem_t *mem) {
 	return dst;
 }
 
-void mem_write(gnum location, gnum value, gleam_mem_t *mem) {
+gnum mem_read_gnum(gnum location, gleam_mem_t *mem) {
+	gnum page_offset;
+	gnum loc = location * sizeof(gnum);
+
+	mem->head = mem_select(loc, mem->head);
+	page_offset = (loc - mem->head->start);
+	return *(gnum*)(mem->head->page + page_offset);
+}
+
+void mem_write_byte(gnum location, gnum value, gleam_mem_t *mem) {
 	register gnum offset = 0;
 	gnum page_offset;
 	
@@ -171,6 +180,14 @@ void mem_write(gnum location, gnum value, gleam_mem_t *mem) {
 	}
 }
 
+void mem_write_gnum(gnum location, gnum value, gleam_mem_t *mem) {
+	gnum page_offset;
+	gnum loc = location * sizeof(gnum);
+
+	mem->head = mem_select(loc, mem->head);
+	page_offset = (loc - mem->head->start);
+	*(gnum*)(mem->head->page + page_offset) = value;
+}
 gnum mem_test (gleam_mem_t *mem) {
 	gnum offset = 0xFF;
 
